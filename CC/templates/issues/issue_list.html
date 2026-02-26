@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h3 class="mb-0 fw-bold">Issues</h3>
+    {% if user.role == 'student' %}
+    <a class="btn btn-primary" href="{% url 'issues:issue_create' %}"><i class="bi bi-plus-lg me-1"></i>Submit Issue</a>
+    {% endif %}
+</div>
+
+<form class="row g-2 mb-4 p-3 bg-white rounded-3 shadow-sm" method="get">
+    <div class="col-auto">
+        <select name="category" class="form-select form-select-sm">
+            <option value="">All Categories</option>
+            {% for v, l in issue_category_choices %}
+            <option value="{{ v }}" {% if request.GET.category == v %}selected{% endif %}>{{ l }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-auto">
+        <select name="priority" class="form-select form-select-sm">
+            <option value="">All Priorities</option>
+            <option value="low" {% if request.GET.priority == 'low' %}selected{% endif %}>Low</option>
+            <option value="medium" {% if request.GET.priority == 'medium' %}selected{% endif %}>Medium</option>
+            <option value="high" {% if request.GET.priority == 'high' %}selected{% endif %}>High</option>
+            <option value="critical" {% if request.GET.priority == 'critical' %}selected{% endif %}>Critical</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <select name="status" class="form-select form-select-sm">
+            <option value="">All Statuses</option>
+            <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+            <option value="in_progress" {% if request.GET.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+            <option value="resolved" {% if request.GET.status == 'resolved' %}selected{% endif %}>Resolved</option>
+        </select>
+    </div>
+    <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary">Filter</button></div>
+</form>
+
+<div class="card table-responsive">
+    <table class="table table-hover mb-0">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Reported</th>
+                {% if user.role == 'admin' %}<th>Assigned To</th>{% endif %}
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for issue in issues %}
+            <tr>
+                <td>{{ issue.title }}</td>
+                <td>{{ issue.get_category_display }}</td>
+                <td>{{ issue.get_priority_display }}</td>
+                <td><span class="badge status-{{ issue.status }}">{{ issue.get_status_display }}</span></td>
+                <td>{{ issue.created_at|date:"M d, Y" }}</td>
+                {% if user.role == 'admin' %}<td>{{ issue.assigned_to.username|default:"—" }}</td>{% endif %}
+                <td><a href="{% url 'issues:issue_detail' issue.pk %}" class="btn btn-sm btn-outline-primary">View</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted">No issues found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

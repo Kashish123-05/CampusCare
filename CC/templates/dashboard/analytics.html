@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h3 class="mb-4">Analytics</h3>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <h6>Resolution Rate</h6>
+                <p class="display-6">{{ resolution_rate }}%</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <h6>Avg Resolution Time</h6>
+                <p class="display-6">{{ avg_resolution_hours }}h</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">Issues by Category</div>
+            <div class="card-body">
+                <canvas id="categoryChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">Monthly Trend</div>
+            <div class="card-body">
+                <canvas id="monthlyChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Staff Performance (Resolved Count)</div>
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr><th>Staff</th><th>Resolved</th></tr>
+            </thead>
+            <tbody>
+                {% for s in staff_perf %}
+                <tr>
+                    <td>{{ s.assigned_to__first_name }} {{ s.assigned_to__last_name|default:s.assigned_to__username }}</td>
+                    <td>{{ s.resolved }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="2" class="text-muted">No data yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const catData = {{ category_data|safe }};
+    const monthlyData = {{ monthly_data|safe }};
+    const catLabels = (catData || []).map(x => (x.category || '').replace(/_/g, ' '));
+    const catCounts = (catData || []).map(x => x.count || 0);
+    const monLabels = (monthlyData || []).map(x => x.month || '');
+    const monCounts = (monthlyData || []).map(x => x.count || 0);
+
+    if (document.getElementById('categoryChart')) {
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'doughnut',
+            data: {
+                labels: catLabels.length ? catLabels : ['No data'],
+                datasets: [{ data: catCounts.length ? catCounts : [1], backgroundColor: ['#0d6efd','#198754','#ffc107','#dc3545','#6f42c1','#fd7e14'] }]
+            }
+        });
+    }
+    if (document.getElementById('monthlyChart')) {
+        new Chart(document.getElementById('monthlyChart'), {
+            type: 'line',
+            data: {
+                labels: monLabels.length ? monLabels : ['No data'],
+                datasets: [{ label: 'Issues', data: monCounts.length ? monCounts : [0], borderColor: '#0d6efd', fill: false }]
+            },
+            options: { scales: { y: { beginAtZero: true } } }
+        });
+    }
+});
+</script>
+{% endblock %}

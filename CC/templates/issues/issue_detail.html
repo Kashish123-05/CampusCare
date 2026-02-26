@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<nav class="mb-3"><a href="{% url 'issues:issue_list' %}">&larr; Back to Issues</a></nav>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ issue.title }}</h5>
+                <span class="badge status-{{ issue.status }}">{{ issue.get_status_display }}</span>
+            </div>
+            <div class="card-body">
+                <p><strong>Description:</strong><br>{{ issue.description }}</p>
+                <p><strong>Category:</strong> {{ issue.get_category_display }}</p>
+                <p><strong>Priority:</strong> {{ issue.get_priority_display }}</p>
+                <p><strong>Location:</strong> {{ issue.location_building }} {{ issue.location_room|default:"" }}</p>
+                <p><strong>Reported by:</strong> {{ issue.reported_by.username }} on {{ issue.created_at|date:"M d, Y H:i" }}</p>
+                {% if issue.assigned_to %}
+                <p><strong>Assigned to:</strong> {{ issue.assigned_to.get_full_name|default:issue.assigned_to.username }}</p>
+                {% endif %}
+                {% if issue.resolution_notes %}
+                <p><strong>Resolution notes:</strong><br>{{ issue.resolution_notes }}</p>
+                {% endif %}
+                {% if issue.resolution_time %}
+                <p><strong>Resolution time:</strong> {{ issue.resolution_time }}</p>
+                {% endif %}
+                {% if issue.image %}
+                <p><strong>Image:</strong><br>
+                    <a href="{{ issue.image.url }}" target="_blank">
+                        <img src="{{ issue.image.url }}" alt="Issue" class="img-fluid rounded" style="max-height: 300px;">
+                    </a>
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if issue.history.all %}
+        <div class="card mb-3">
+            <div class="card-header"><h6 class="mb-0">Status History</h6></div>
+            <ul class="list-group list-group-flush">
+                {% for h in issue.history.all %}
+                <li class="list-group-item">
+                    {{ h.old_status|default:"—" }} &rarr; {{ h.new_status }} by {{ h.changed_by.username }} on {{ h.created_at|date:"M d, H:i" }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+    <div class="col-lg-4">
+        {% if assign_form and user.role == 'admin' %}
+        <div class="card mb-3">
+            <div class="card-header"><h6 class="mb-0">Assign / Update</h6></div>
+            <div class="card-body">
+                <form method="post" action="{% url 'issues:issue_assign' issue.pk %}">
+                    {% csrf_token %}
+                    {{ assign_form.as_p }}
+                    <button type="submit" class="btn btn-primary btn-sm">Update</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        {% if status_form and user.role == 'maintenance' %}
+        <div class="card">
+            <div class="card-header"><h6 class="mb-0">Assign / Update</h6></div>
+            <div class="card-body">
+                <form method="post" action="{% url 'issues:issue_update_status' issue.pk %}">
+                    {% csrf_token %}
+                    {{ status_form.as_p }}
+                    <button type="submit" class="btn btn-primary btn-sm">Update Status</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

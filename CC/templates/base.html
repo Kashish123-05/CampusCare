@@ -1,0 +1,116 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CampusCare{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{% static 'css/style.css' %}" rel="stylesheet">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-custom">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'accounts:home' %}">CampusCare</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="nav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="{% url 'accounts:home' %}">Home</a></li>
+                    {% if user.is_authenticated %}
+                        <li class="nav-item"><a class="nav-link" href="{% url 'issues:issue_list' %}">Issues</a></li>
+                        {% if user.role == 'student' %}
+                        <li class="nav-item"><a class="nav-link" href="{% url 'issues:issue_create' %}">Submit Issue</a></li>
+                        {% endif %}
+                        <li class="nav-item"><a class="nav-link" href="{% url 'dashboard:student_dashboard' %}">Dashboard</a></li>
+                        {% if user.role == 'admin' %}
+                        <li class="nav-item"><a class="nav-link" href="{% url 'dashboard:admin_dashboard' %}">Admin</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'dashboard:analytics' %}">Analytics</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'dashboard:export_reports' %}">Export</a></li>
+                        {% endif %}
+                        {% if user.role == 'maintenance' %}
+                        <li class="nav-item"><a class="nav-link" href="{% url 'dashboard:maintenance_dashboard' %}">Maintenance</a></li>
+                        {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" id="nav-ai-assistant"><i class="bi bi-robot me-1"></i>AI Assistant</a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                <i class="bi bi-bell-fill" id="notifBell"></i>
+                                <span class="badge bg-danger rounded-pill" id="notifCount" style="display:none">0</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" id="notifDropdown">
+                                <li><a class="dropdown-item disabled" href="#">Loading...</a></li>
+                            </ul>
+                        </li>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">{{ user.username }}</a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{% url 'accounts:profile_redirect' %}">Dashboard</a></li>
+                                <li><a class="dropdown-item" href="{% url 'accounts:logout' %}">Logout</a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item"><a class="nav-link" href="{% url 'accounts:login' %}">Login</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'accounts:register' %}">Register</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container my-4">
+        {% if messages %}
+            {% for msg in messages %}
+                <div class="alert alert-{{ msg.tags }} alert-dismissible fade show" role="alert">
+                    {{ msg }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer-custom">
+        &copy; CampusCare - Smart Campus Issue Reporting System
+    </footer>
+
+    {% if chatbot_enabled and user.is_authenticated %}
+    {% include 'chatbot/widget.html' %}
+    {% endif %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const notifCount = document.getElementById('notifCount');
+            const notifDropdown = document.getElementById('notifDropdown');
+            if (notifCount && notifDropdown) {
+                fetch('{% url "dashboard:notifications_api" %}')
+                    .then(r => r.json())
+                    .then(d => {
+                        const n = d.notifications || [];
+                        const unread = d.unread_count || 0;
+                        if (unread > 0) {
+                            notifCount.textContent = unread;
+                            notifCount.style.display = 'inline';
+                        }
+                        notifDropdown.innerHTML = n.length ? n.map(x =>
+                            `<li><a class="dropdown-item ${x.is_read ? '' : 'fw-bold'}" href="${x.link || '#'}">${x.title}</a></li>`
+                        ).join('') : '<li><a class="dropdown-item disabled" href="#">No notifications</a></li>';
+                    });
+            }
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
